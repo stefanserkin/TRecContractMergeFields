@@ -8,6 +8,9 @@ public with sharing class TRecContractMergeService {
         this.contracts = contracts;
     }
 
+    /****************************************************
+     * Replaces merge fields in the waiver text of a list of contract and forms
+     ****************************************************/
     public List<TREX1__Contract_and_Form__c> populateMergeFields() {
         Set<String> uniqueMergeFields = new Set<String>{ 'TREX1__Waiver_Text__c' };
         for (TREX1__Contract_and_Form__c contract : contracts) {
@@ -19,27 +22,13 @@ public with sharing class TRecContractMergeService {
 
         String query = 'SELECT ' + String.join(mergeFields, ', ') + 
             ' FROM TREX1__Contract_and_Form__c WHERE Id IN :contracts';
-        
-        System.debug(':::: query --> ' + query);
 
         List<TREX1__Contract_and_Form__c> contractsWithMergeInfo = Database.query( String.escapeSingleQuotes(query) );
-
-        System.debug(':::: contracts --> ' + contractsWithMergeInfo);
-
 
         for (TREX1__Contract_and_Form__c contract : contractsWithMergeInfo) {
             contract.TREX1__Waiver_Text__c = replaceMergeFieldsWithValues(contract.TREX1__Waiver_Text__c, contract);
         }
-        System.debug(':::: contracts --> ' + contractsWithMergeInfo);
         return contractsWithMergeInfo;
-    }
-
-    public static String doMergingStuff(String input) {
-
-        Set<String> mergeFields = getMergeFieldsFromString(input);
-        System.debug('mergeFields: ' + mergeFields);
-
-        return input;
     }
 
     /****************************************************
