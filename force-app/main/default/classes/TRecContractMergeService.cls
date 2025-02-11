@@ -58,14 +58,9 @@ public with sharing class TRecContractMergeService {
 
         while(m.find()) {
             String fieldApiPath = m.group().substring(2, m.group().length() - 1);
-            System.debug('::: fieldApiPath --> ' + fieldApiPath);
-
             Object fieldValue = getFieldValue(obj, fieldApiPath);
-            System.debug('::: fieldValue --> ' + fieldValue);
             Schema.DescribeFieldResult fieldDescribe = getFieldDescribe(obj, fieldApiPath);
-            System.debug('::: field describe --> ' + fieldDescribe);
             String formattedValue = formatFieldValue(fieldValue, fieldDescribe);
-            System.debug('::: formattedValue --> ' + formattedValue);
             result = result.replace(m.group(0), formattedValue);
         }
         return result;
@@ -121,19 +116,17 @@ public with sharing class TRecContractMergeService {
 
         for (Integer i = 0; i < fieldParts.size(); i++) {
             String fieldName = fieldParts[i];
-
-            // Get the field map for the current SObject
             Map<String, Schema.SObjectField> fieldMap = currentSObjectType.getDescribe().fields.getMap();
 
             // Handle relationship field resolution
             if (!fieldMap.containsKey(fieldName)) {
-                // If the field is a relationship, its actual field name may be different
+                // Custom fields
                 if (fieldName.endsWith('__r')) {
-                    String lookupFieldName = fieldName.replace('__r', '__c'); // Convert custom relationship field
+                    String lookupFieldName = fieldName.replace('__r', '__c');
                     if (fieldMap.containsKey(lookupFieldName)) {
                         fieldName = lookupFieldName;
                     } else {
-                        return null; // Relationship field not found
+                        return null;
                     }
                 } else {
                     // Check for standard lookup fields (e.g., Account -> AccountId)
@@ -158,16 +151,18 @@ public with sharing class TRecContractMergeService {
             if (fieldDescribe.getType() == Schema.DisplayType.REFERENCE) {
                 List<Schema.SObjectType> referenceTo = fieldDescribe.getReferenceTo();
                 if (!referenceTo.isEmpty()) {
-                    currentSObjectType = referenceTo[0]; // Assume single reference type
+                    // Assume single reference type
+                    currentSObjectType = referenceTo[0];
                 } else {
-                    return null; // If no reference type is found, return null
+                    return null;
                 }
             } else {
-                return null; // If a non-relationship field appears before the last, return null
+                // If a non-relationship field appears before the last, return null
+                return null;
             }
         }
 
-        return null; // Fallback in case of an unexpected issue
+        return null;
     }
 
     /****************************************************
