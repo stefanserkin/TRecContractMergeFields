@@ -35,6 +35,7 @@ public with sharing class TRecContractMergeService {
      * Returns a set of field api names for merge fields in the input
      * @param String String containing merge fields
      ****************************************************/
+    @TestVisible
     private static Set<String> getMergeFieldsFromString(String input) {
         Set<String> setMergeFields = new Set<String>();
         Pattern p = Pattern.compile(MERGE_FIELD_REGEX);
@@ -51,6 +52,7 @@ public with sharing class TRecContractMergeService {
      * @param String String containing merge fields to be replaced
      * @param SObject The api name of the sObject type
      ****************************************************/
+    @TestVisible
     private static String replaceMergeFieldsWithValues(String input, SObject obj) {
         String result = input;
         Pattern p = Pattern.compile(MERGE_FIELD_REGEX);
@@ -73,10 +75,7 @@ public with sharing class TRecContractMergeService {
      * @return The field value as an Object (can be cast to the expected type)
      */
     public static Object getFieldValue(SObject record, String fieldPath) {
-        if (record == null || String.isEmpty(fieldPath)) {
-            return null;
-        }
-
+        Object result;
         List<String> fieldParts = fieldPath.split('\\.');
         SObject currentRecord = record;
 
@@ -86,16 +85,14 @@ public with sharing class TRecContractMergeService {
 
             // If it's the last field in the path, return the field value
             if (i == fieldParts.size() - 1) {
-                return currentRecord.get(field);
+                result = currentRecord.get(field);
+                break;
             }
 
             // Otherwise, traverse the relationship
             currentRecord = currentRecord.getSObject(field);
-            if (currentRecord == null) {
-                return null;
-            }
         }
-        return null;
+        return result;
     }
 
     /**
@@ -107,10 +104,6 @@ public with sharing class TRecContractMergeService {
      * @return The Schema.DescribeFieldResult for the last field in the path
      */
     public static Schema.DescribeFieldResult getFieldDescribe(SObject record, String fieldPath) {
-        if (record == null || String.isEmpty(fieldPath)) {
-            return null;
-        }
-
         List<String> fieldParts = fieldPath.split('\\.');
         Schema.SObjectType currentSObjectType = record.getSObjectType();
 
@@ -118,6 +111,17 @@ public with sharing class TRecContractMergeService {
             String fieldName = fieldParts[i];
             Map<String, Schema.SObjectField> fieldMap = currentSObjectType.getDescribe().fields.getMap();
 
+            // Handle relationship field resolution
+            if (!fieldMap.containsKey(fieldName)) {
+                String lookupFieldName = fieldName.endsWith('__r') ? fieldName.replace('__r', '__c') : fieldName + 'Id';
+                if (fieldMap.containsKey(lookupFieldName)) {
+                    fieldName = lookupFieldName;
+                } else {
+                    return null;
+                }
+            }
+
+            /*
             // Handle relationship field resolution
             if (!fieldMap.containsKey(fieldName)) {
                 // Custom fields
@@ -130,16 +134,26 @@ public with sharing class TRecContractMergeService {
                     }
                 } else {
                     // Check for standard lookup fields (e.g., Account -> AccountId)
+                    System.debug(':::: ready to evaluate standard field for fieldName --> ' + fieldName);
+                    if (fieldMap.containsKey(arg0))
+
+                    
                     for (String potentialField : fieldMap.keySet()) {
+                        System.debug('::: checking potential field --> ' + potentialField);
                         if (potentialField.toLowerCase().startsWith(fieldName.toLowerCase()) && potentialField.endsWith('Id')) {
+                            System.debug('::: potential field is a match --> ' + potentialField);
                             fieldName = potentialField;
                             break;
                         }
                     }
+                        
                 }
             }
+                */
 
             Schema.SObjectField field = fieldMap.get(fieldName);
+            System.debug('::::::::: field --> ' + field);
+            System.debug('::::::::: fieldName --> ' + fieldName);
             Schema.DescribeFieldResult fieldDescribe = field.getDescribe();
 
             // If this is the last field in the path, return its describe result
@@ -171,6 +185,7 @@ public with sharing class TRecContractMergeService {
      * @param Schema.DescribeFieldResult field describe for the provided field
      * @return String Formatted field value
      ****************************************************/
+    @TestVisible
     private static String formatFieldValue(Object fieldValue, Schema.DescribeFieldResult fieldDescribe) {
         if (fieldValue == null) return '';
 
