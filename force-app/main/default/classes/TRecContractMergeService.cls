@@ -12,6 +12,7 @@ public with sharing class TRecContractMergeService {
      * Replaces merge fields in the waiver text of a list of contract and forms
      ****************************************************/
     public List<TREX1__Contract_and_Form__c> populateMergeFields() {
+        // Get all merge fields used in waiver text
         Set<String> uniqueMergeFields = new Set<String>{ 'TREX1__Waiver_Text__c' };
         for (TREX1__Contract_and_Form__c contract : contracts) {
             uniqueMergeFields.addAll(
@@ -20,11 +21,13 @@ public with sharing class TRecContractMergeService {
         }
         List<String> mergeFields = new List<String>(uniqueMergeFields);
 
+        // Query for contracts and select values for merge fields
         String query = 'SELECT ' + String.join(mergeFields, ', ') + 
-            ' FROM TREX1__Contract_and_Form__c WHERE Id IN :contracts';
+                        ' FROM TREX1__Contract_and_Form__c WHERE Id IN :contracts';
 
         List<TREX1__Contract_and_Form__c> contractsWithMergeInfo = Database.query( String.escapeSingleQuotes(query) );
 
+        // Replace merge fields with values
         for (TREX1__Contract_and_Form__c contract : contractsWithMergeInfo) {
             contract.TREX1__Waiver_Text__c = replaceMergeFieldsWithValues(contract.TREX1__Waiver_Text__c, contract);
         }
@@ -121,39 +124,7 @@ public with sharing class TRecContractMergeService {
                 }
             }
 
-            /*
-            // Handle relationship field resolution
-            if (!fieldMap.containsKey(fieldName)) {
-                // Custom fields
-                if (fieldName.endsWith('__r')) {
-                    String lookupFieldName = fieldName.replace('__r', '__c');
-                    if (fieldMap.containsKey(lookupFieldName)) {
-                        fieldName = lookupFieldName;
-                    } else {
-                        return null;
-                    }
-                } else {
-                    // Check for standard lookup fields (e.g., Account -> AccountId)
-                    System.debug(':::: ready to evaluate standard field for fieldName --> ' + fieldName);
-                    if (fieldMap.containsKey(arg0))
-
-                    
-                    for (String potentialField : fieldMap.keySet()) {
-                        System.debug('::: checking potential field --> ' + potentialField);
-                        if (potentialField.toLowerCase().startsWith(fieldName.toLowerCase()) && potentialField.endsWith('Id')) {
-                            System.debug('::: potential field is a match --> ' + potentialField);
-                            fieldName = potentialField;
-                            break;
-                        }
-                    }
-                        
-                }
-            }
-                */
-
             Schema.SObjectField field = fieldMap.get(fieldName);
-            System.debug('::::::::: field --> ' + field);
-            System.debug('::::::::: fieldName --> ' + fieldName);
             Schema.DescribeFieldResult fieldDescribe = field.getDescribe();
 
             // If this is the last field in the path, return its describe result
