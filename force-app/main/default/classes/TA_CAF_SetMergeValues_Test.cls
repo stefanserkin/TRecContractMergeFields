@@ -1,5 +1,5 @@
 @IsTest
-private class TRecContractMergeService_Test {
+private class TA_CAF_SetMergeValues_Test {
     
     @TestSetup
     static void makeData() {
@@ -27,8 +27,8 @@ private class TRecContractMergeService_Test {
         List<TREX1__Contract_and_Form__c> contracts = [SELECT Id, TREX1__Waiver_Text__c FROM TREX1__Contract_and_Form__c];
 
         Test.startTest();
-        TRecContractMergeService service = new TRecContractMergeService(contracts);
-        List<TREX1__Contract_and_Form__c> updatedContracts = service.populateMergeFields();
+        TRecContractFieldMerge fieldMerge = new TRecContractFieldMerge(contracts);
+        List<TREX1__Contract_and_Form__c> updatedContracts = fieldMerge.populateMergeFields();
         Test.stopTest();
 
         System.Assert.areNotEqual(null, updatedContracts, 'Returned contract list should not be null.');
